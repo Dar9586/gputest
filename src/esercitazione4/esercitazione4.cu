@@ -20,8 +20,10 @@ __global__ void prodotto(const float u[], const float v[], float w[], int N) {
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) { exit(1); }
+    if (argc != 4) { exit(1); }
     int N = atoi(argv[1]);
+    int grid_x = atoi(argv[2]);
+    int block_x = atoi(argv[3]);
     float *du, *dv, *dw;
 
     // Alloco memoria
@@ -34,14 +36,13 @@ int main(int argc, char *argv[]) {
     cudaMalloc(&dw, vec_size);
 
     // Inizializzo i dati
-    float val = 0;
     for (int i = 0; i < N; i++) {
-        u[i] = val++;
-        v[i] = val++;
+        u[i] = (float)i;
+        v[i] = (float)i;
     }
 
-    dim3 gridDim(16, 1, 1);
-    dim3 blockDim(32, 1, 1);
+    dim3 gridDim(grid_x, 1, 1);
+    dim3 blockDim(block_x, 1, 1);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
