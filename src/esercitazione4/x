@@ -1,0 +1,89 @@
+#include <hip/hip_runtime.h>
+
+#include <cstdio>
+
+__global__ void prodotto(const float u[], const float v[], float w[], int N) {
+    // Ottengo il numero di thread usati
+    int grid_size = gridDim.x * blockDim.x;
+    // Controllo quanti elementi deve sommare ogni thread
+    int data_size = N / grid_size;
+    // Ottengo l'indice del thread
+    int index = threadIdx.x + blockIdx.x * blockDim.x;
+    // Trovo l'indice finale in modo che non vada fuori range
+    int to_1 = (index + 1) * data_size;
+    int to = (to_1 < N) * to_1 + (N <= to_1) * N; // min tra N e to_1 senza if
+    // Eseguo i calcoli
+    for (int i = index * data_size; i < to; ++i) {
+        w[i] = u[i] * v[i];
+    }
+}
+
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) { exit(1); }
+    int N = atoi(argv[1]);
+    float *du, *dv, *dw;
+
+    // Alloco memoria
+    int vec_size = N * sizeof(float);
+    float *u = (float *) malloc(vec_size);
+    float *v = (float *) malloc(vec_size);
+    float *w = (float *) malloc(vec_size);
+    hipMalloc(&du, vec_size);
+    hipMalloc(&dv, vec_size);
+    hipMalloc(&dw, vec_size);
+
+    // Inizializzo i dati
+    float val = 0;
+    for (int i = 0; i < N; i++) {
+        u[i] = val++;
+        v[i] = val++;
+    }
+
+    dim3 gridDim(16, 1, 1);
+    dim3 blockDim(32, 1, 1);
+
+    hipEvent_t start, stop;
+    hipEventCreate(&start);
+    hipEventCreate(&stop);
+
+    // Copio i dati
+    hipMemcpy(du, u, vec_size, hipMemcpyHostToDevice);
+    hipMemcpy(dv, v, vec_size, hipMemcpyHostToDevice);
+
+    // CHIAMO KERNEL
+    hipEventRecord(start);
+    prodotto<<<gridDim, blockDim>>>(du, dv, dw, N);
+    hipEventRecord(stop);
+    hipEventSynchronize(stop);
+
+    // Copio i dati
+    hipMemcpy(w, dw, vec_size, hipMemcpyDeviceToHost);
+
+    // Calcolo tempo richiesto
+    float elapsed;
+    hipEventElapsedTime(&elapsed, start, stop);
+
+    // Eseguo la somma sull'host
+    float sum = 0;
+    for (int i = 0; i < N; ++i) {
+        sum += w[i];
+    }
+
+    // Stampe
+
+    printf("Prodotto scalare: %.2f\n", sum);
+    printf("Tempo richiesto: %f ms\n", elapsed);
+
+    // Libero memoria
+    hipEventDestroy(start);
+    hipEventDestroy(stop);
+    free(u);
+    free(v);
+    free(w);
+    hipFree(du);
+    hipFree(dv);
+    hipFree(dw);
+
+    return 0;
+}

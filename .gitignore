@@ -1,0 +1,3 @@
+*.out
+*.hip
+/cmake-build-debug
