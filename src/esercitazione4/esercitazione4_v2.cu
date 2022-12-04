@@ -1,7 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstdio>
-
+// 8 registri
 __global__ void prodotto(const float u[], const float v[], float w[], int N) {
     // Ottengo l'indice del thread
     int i = threadIdx.x + blockIdx.x * blockDim.x;

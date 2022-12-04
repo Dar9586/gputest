@@ -2,20 +2,19 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstdio>
-
+// 14 registri
 typedef float *floatptr;
 
 __global__ void calc_temp(const floatptr v1, const floatptr v2, floatptr temp_res, int vec_len) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    temp_res[i] += v1[i] * v2[i];
+    if (i >= vec_len)return;
+    temp_res[i] = v1[i] * v2[i];
     __syncthreads();
     // Somma i risultati di tutti i thread del blocco
     for (int step = 1; step < blockDim.x; step *= 2) {
         int remainder = threadIdx.x % (step * 2);
         if (remainder == 0) {
             temp_res[i] += temp_res[i + step];
-        } else {
-            break;
         }
     }
 }
@@ -51,7 +50,6 @@ int main(int argc, char *argv[]) {
     cudaMalloc(&v1_dev, vec_len * sizeof(float));
     cudaMalloc(&v2_dev, vec_len * sizeof(float));
     cudaMalloc(&temp_res_dev, grid_dim.x * block_dim.x * sizeof(float));
-    cudaMemset(temp_res_dev, 0, grid_dim.x * block_dim.x);
     cudaMemcpy(v1_dev, v1, vec_len * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(v2_dev, v2, vec_len * sizeof(float), cudaMemcpyHostToDevice);
 

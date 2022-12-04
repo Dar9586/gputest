@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <math.h>
-
+// 8 registri
 typedef float *floatptr;
 
 #define min(x, y) (((x) < (y)) * (x) + ((y) <= (x)) * (y))
@@ -50,14 +50,16 @@ __global__ void sum_matrix(const floatptr m1, const floatptr m2, floatptr res, i
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        printf("Uso: %s <M> <N>\n", argv[0]);
+    if (argc != 4) {
+        printf("Uso: %s <M> <N> <T>\n", argv[0]);
         exit(1);
     }
     int M = atoi(argv[1]);
     int N = atoi(argv[2]);
+    int T = atoi(argv[3]);
     int block_x,block_y;
     better_ratio(M,N,&block_x,&block_y);
+    block_x=block_y=T;
     floatptr m1, m2, res;
     floatptr m1_dev, m2_dev, res_dev;
     size_t vec_size = (N * M) * sizeof(float);
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     dim3 grid_dim(M/block_x+((M%block_x)!=0), N/block_y+((N%block_y)!=0));
     dim3 block_dim(block_x,block_y);
-    printf("Used grid: (%d * %d), block: (%d * %d)\n",  grid_dim.x,grid_dim.y,block_dim.x,block_dim.y);
+    printf("Used grid: (%d * %d), block: (%d * %d) ",  grid_dim.x,grid_dim.y,block_dim.x,block_dim.y);
     cudaEventRecord(start);
     sum_matrix<<<grid_dim, block_dim>>>(m1_dev, m2_dev, res_dev, M, N);
     cudaEventRecord(stop);
@@ -105,7 +107,6 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
     }
-    printf("\n");
     // Libero dati
     free(m1);
     free(m2);
