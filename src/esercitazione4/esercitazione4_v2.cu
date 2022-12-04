@@ -4,11 +4,9 @@
 
 __global__ void prodotto(const float u[], const float v[], float w[], int N) {
     // Ottengo l'indice del thread
-    int index = threadIdx.x + blockIdx.x * blockDim.x;
-    // Eseguo i calcoli
-    if(index<N) {
-        w[index] = u[index] * v[index];
-    }
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    // Trovo l'indice finale in modo che non vada fuori range
+    if(i < N) w[i] = u[i] * v[i];
 }
 
 
@@ -27,14 +25,13 @@ int main(int argc, char *argv[]) {
     cudaMalloc(&dw, vec_size);
 
     // Inizializzo i dati
-    float val = 0;
     for (int i = 0; i < N; i++) {
-        u[i] = val++;
-        v[i] = val++;
+        u[i] = (float)i;
+        v[i] = (float)i;
     }
 
-    dim3 gridDim(N/1024, 1, 1);
-    dim3 blockDim(1024, 1, 1);
+    dim3 gridDim(N/64, 1, 1);
+    dim3 blockDim(64, 1, 1);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);

@@ -6,15 +6,8 @@
 typedef float *floatptr;
 
 __global__ void calc_temp(const floatptr v1, const floatptr v2, floatptr temp_res, int vec_len) {
-    int total_blocks = blockDim.x * gridDim.x;
-    int itemPerThread = vec_len / total_blocks;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int startIdx = i * itemPerThread;
-    int stopIdx = (i + 1) * itemPerThread;
-    // Calcola i risultati parziali
-    for (int j = startIdx; j < stopIdx; ++j) {
-        temp_res[i] += v1[j] * v2[j];
-    }
+    temp_res[i] += v1[i] * v2[i];
     __syncthreads();
     // Somma i risultati di tutti i thread del blocco
     for (int step = 1; step < blockDim.x; step *= 2) {
@@ -37,11 +30,12 @@ void fill_vector(floatptr vec, int len) {
 int main(int argc, char *argv[]) {
     floatptr v1_dev, v2_dev, temp_res_dev;
 
-    if (argc != 4) { exit(1); }
+    if (argc != 2) { exit(1); }
     int vec_len = atoi(argv[1]);
     // Definizione dimensione griglia
-    dim3 grid_dim(atoi(argv[2]));
-    dim3 block_dim(atoi(argv[3]));
+    dim3 grid_dim(vec_len/64+((vec_len%64)!=0));
+    dim3 block_dim(64);
+    printf("Grid %d, blocks %d\n",grid_dim.x,block_dim.x);
     // Creazione eventi
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -65,20 +59,20 @@ int main(int argc, char *argv[]) {
     // Esecuzione kernel
     cudaEventRecord(start);
     calc_temp<<<grid_dim, block_dim>>>(v1_dev, v2_dev, temp_res_dev, vec_len);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-
     // Calcolo risultato finale dai risultati parziali dei blocchi
     cudaMemcpy(temp_res, temp_res_dev, grid_dim.x * block_dim.x * sizeof(float), cudaMemcpyDeviceToHost);
     float total = 0;
     for (int i = 0; i < grid_dim.x; ++i) {
+        printf("%.1f, ",temp_res[i * block_dim.x]);
         total += temp_res[i * block_dim.x];
     }
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
 
     // Stampa
     float elapsed;
     cudaEventElapsedTime(&elapsed, start, stop);
-    printf("Total: %f in %.4f ms\n", total,elapsed);
+    printf("\nTotal: %f in %.4f ms\n", total,elapsed);
 
     // Free
     cudaFree(v1_dev);
