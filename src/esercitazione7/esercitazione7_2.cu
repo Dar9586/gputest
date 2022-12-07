@@ -25,7 +25,6 @@ int main(int argc, char *argv[]) {
     int M = atoi(argv[1]);
     int N = atoi(argv[2]);
     int mat_size = M * N;
-    int vec_size = N;
     cublasHandle_t handle;
     floatptr mat_dev, vec_dev, out_dev;
     float result = 0;     // Risultato finale
@@ -35,15 +34,15 @@ int main(int argc, char *argv[]) {
     */
 
     floatptr mat_host = (floatptr) malloc(fsize(mat_size));      // Alloco h_a e lo inizializzo
-    floatptr vec_host = (floatptr) malloc(fsize(vec_size));  // Alloco h_b e lo inizializzo
-    floatptr out_host = (floatptr) malloc(fsize(vec_size));  // Alloco h_b e lo inizializzo
+    floatptr vec_host = (floatptr) malloc(fsize(N));  // Alloco h_b e lo inizializzo
+    floatptr out_host = (floatptr) malloc(fsize(M));  // Alloco h_b e lo inizializzo
     fill_matrix(mat_host, M, N);
     fill_vector(vec_host, N);
 
     cublasCreate(&handle);               // Creo l'handle per cublas
     cudaMalloc((void **) &mat_dev, fsize(mat_size));       // Alloco d_a
-    cudaMalloc((void **) &vec_dev, fsize(vec_size));       // Alloco d_b
-    cudaMalloc((void **) &out_dev, fsize(vec_size));       // Alloco d_b
+    cudaMalloc((void **) &vec_dev, fsize(N));       // Alloco d_b
+    cudaMalloc((void **) &out_dev, fsize(M));       // Alloco d_b
     cublasSetMatrix(M, N, sizeof(float), mat_host, M, mat_dev, M);
     cublasSetVector(N, sizeof(float), vec_host, 1, vec_dev, 1);
     float scalar = 1;
@@ -58,10 +57,10 @@ int main(int argc, char *argv[]) {
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 
-    cublasGetVector(N, sizeof(float), out_dev, 1, out_host, 1);
+    cublasGetVector(M, sizeof(float), out_dev, 1, out_host, 1);
 
-    if (N <= 10) {
-        for (int i = 0; i < N; ++i) {
+    if (M <= 10) {
+        for (int i = 0; i < M; ++i) {
             printf("%.1f, ", out_host[i]);
         }
         printf("\n");
