@@ -24,6 +24,7 @@ __global__ void calc_temp(const floatptr v1, const floatptr v2, floatptr res, in
         if (remainder == 0) {
             temp_res_shared[threadIdx.x] += temp_res_shared[threadIdx.x + step];
         }
+        __syncthreads();
     }
     if (threadIdx.x == 0)
         res[blockIdx.x] = temp_res_shared[0];

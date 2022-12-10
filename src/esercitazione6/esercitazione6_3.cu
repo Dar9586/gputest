@@ -22,6 +22,7 @@ __global__ void calc_temp(const floatptr v1, const floatptr v2, floatptr res, in
     for (int step = blockDim.x / 2; step > 0; step /= 2) {
         if (threadIdx.x < step)
             temp_res_shared[threadIdx.x] += temp_res_shared[threadIdx.x + step];
+        __syncthreads();
     }
     if (threadIdx.x == 0)
         res[blockIdx.x] = temp_res_shared[threadIdx.x];

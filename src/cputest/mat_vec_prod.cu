@@ -24,18 +24,17 @@ int main(int argc, char *argv[]) {
     int M = atoi(argv[1]);
     int N = atoi(argv[2]);
     int mat_size = M * N;
-    int vec_size = N;
     float result;     // Risultato finale
     clock_t t;
     floatptr mat_host = (floatptr) malloc(fsize(mat_size));  // Alloco h_a e lo inizializzo
-    floatptr vec_host = (floatptr) malloc(fsize(vec_size));  // Alloco h_b e lo inizializzo
-    floatptr out_host = (floatptr) calloc(vec_size, sizeof(float));  // Alloco h_b e lo inizializzo
+    floatptr vec_host = (floatptr) malloc(fsize(N));  // Alloco h_b e lo inizializzo
+    floatptr out_host = (floatptr) calloc(M, sizeof(float));  // Alloco h_b e lo inizializzo
     fill_matrix(mat_host, M, N);
     fill_vector(vec_host, N);
     t=clock();
     for (int i = 0; i < M; ++i) {
         for (int j = 0; j < N; ++j) {
-            out_host[j]+=mat_host[i*M+j]*vec_host[j];
+            out_host[i]+=mat_host[i*M+j]*vec_host[j];
         }
     }
     t=clock()-t;
